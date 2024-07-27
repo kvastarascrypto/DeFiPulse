@@ -1,0 +1,59 @@
+import requests
+import pandas as pd
+import matplotlib.pyplot as plt
+from datetime import datetime
+
+class DeFiPulse:
+    def __init__(self, defipulse_api_key: str, defipulse_api_url: str = 'https://public.defipulse.com/api/GetLendingProtocols'):
+        self.api_key = defipulse_api_key
+        self.api_url = defipulse_api_url
+
+    def get_protocol_data(self) -> pd.DataFrame:
+        url = f"{self.api_url}?api-key={self.api_key}"
+        response = requests.get(url)
+        data = response.json()
+
+        protocols = []
+        for protocol in data:
+            protocols.append({
+                'name': protocol['name'],
+                'tvl_usd': protocol['tvl']['USD'],
+                'tvl_eth': protocol['tvl']['ETH']
+            })
+        
+        return pd.DataFrame(protocols)
+
+    def plot_tvl(self, df: pd.DataFrame):
+        plt.figure(figsize=(12, 6))
+        plt.bar(df['name'], df['tvl_usd'])
+        plt.title('Total Value Locked (TVL) in DeFi Protocols')
+        plt.xlabel('Protocol')
+        plt.ylabel('TVL (USD)')
+        plt.xticks(rotation=45)
+        plt.grid(True)
+        plt.show()
+
+    def calculate_yield(self, protocol_name: str, principal: float, rate: float, time: float) -> float:
+        return principal * ((1 + rate) ** time - 1)
+
+# Example Usage
+if __name__ == "__main__":
+    DEFI_PULSE_API_KEY = 'YOUR_DEFIPULSE_API_KEY'
+
+    defipulse = DeFiPulse(DEFI_PULSE_API_KEY)
+
+    # Fetch Protocol Data
+    protocol_data = defipulse.get_protocol_data()
+    print("Protocol Data:")
+    print(protocol_data)
+
+    # Plot TVL
+    defipulse.plot_tvl(protocol_data)
+
+    # Calculate Yield
+    protocol_name = 'example_protocol'
+    principal = 1000  # Principal amount in USD
+    rate = 0.05  # Annual interest rate
+    time = 1  # Time in years
+    yield_amount = defipulse.calculate_yield(protocol_name, principal, rate, time)
+    print(f"Calculated Yield for {protocol_name}: ${yield_amount:.2f}")
